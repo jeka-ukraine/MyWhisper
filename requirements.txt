@@ -1,0 +1,7 @@
+openai-whisper
+pywhispercpp
+ffmpeg-python
+pydub
+tqdm
+omegaconf
+git+https://github.com/m-bain/whisperx.git

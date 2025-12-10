@@ -16,13 +16,42 @@ cd "$PROJECT_DIR" || {
     exit 1
 }
 
-# Активируем виртуальное окружение
-echo "Активация виртуального окружения..."
-source "$VENV_DIR/bin/activate" || {
-    echo "Ошибка: не удалось активировать виртуальное окружение $VENV_DIR"
-    read -p "Нажмите Enter для закрытия..."
-    exit 1
-}
+# Проверяем наличие виртуального окружения
+if [ ! -d "$VENV_DIR" ]; then
+    echo "========================================"
+    echo "ПЕРВЫЙ ЗАПУСК / FIRST RUN"
+    echo "========================================"
+    echo "Виртуальное окружение не найдено. Создаем..."
+    echo "Creating virtual environment..."
+    python3 -m venv "$VENV_DIR"
+    
+    # Активируем
+    source "$VENV_DIR/bin/activate"
+    
+    echo "Установка зависимостей (это может занять несколько минут)..."
+    echo "Installing dependencies..."
+    pip install --upgrade pip
+    
+    if [ -f "$PROJECT_DIR/requirements.txt" ]; then
+        pip install -r "$PROJECT_DIR/requirements.txt"
+    else
+        echo "ВНИМАНИЕ: Файл requirements.txt не найден! Установка пакетов по умолчанию..."
+        pip install openai-whisper pywhispercpp ffmpeg-python pydub tqdm omegaconf git+https://github.com/m-bain/whisperx.git
+    fi
+    
+    echo "========================================"
+    echo "Установка завершена! Запуск..."
+    echo "Setup complete! Starting..."
+    echo "========================================"
+else
+    # Активируем существующее
+    echo "Активация виртуального окружения..."
+    source "$VENV_DIR/bin/activate" || {
+        echo "Ошибка: не удалось активировать виртуальное окружение $VENV_DIR"
+        read -p "Нажмите Enter для закрытия..."
+        exit 1
+    }
+fi
 
 # Запускаем Python скрипт
 echo "Запуск скрипта транскрипции..."
