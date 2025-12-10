@@ -56,7 +56,7 @@ fi
 # Запускаем Python скрипт
 echo "Запуск скрипта транскрипции..."
 echo "========================================"
-python "$PYTHON_SCRIPT"
+"$VENV_DIR/bin/python" "$PYTHON_SCRIPT"
 
 # Сохраняем код выхода
 EXIT_CODE=$?

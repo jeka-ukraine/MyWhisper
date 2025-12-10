@@ -15,7 +15,7 @@ cd "$PROJECT_ROOT"
 source "myenv/bin/activate"
 echo "Запуск Whisper Transcriber..."
 echo "========================================"
-python "whisper_v19_corrected_timer_60_percent_rem_file.py"
+"$PROJECT_ROOT/myenv/bin/python" "whisper_v19_corrected_timer_60_percent_rem_file.py"
 EXIT_CODE=\$?
 echo "========================================"
 if [ \$EXIT_CODE -eq 0 ]; then
