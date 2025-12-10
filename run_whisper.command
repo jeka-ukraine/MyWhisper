@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Полный путь к директории проекта
-PROJECT_DIR="/Users/eugeneprokopenko/Downloads/Converter"
+PROJECT_DIR="/Users/eugeneprokopenko/Projects/MyWhisper"
 
 # Полный путь к виртуальному окружению
 VENV_DIR="$PROJECT_DIR/myenv"

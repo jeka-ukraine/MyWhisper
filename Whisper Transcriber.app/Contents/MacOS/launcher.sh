@@ -5,7 +5,7 @@ TEMP_SCRIPT=$(mktemp /tmp/whisper_launcher.XXXXXX.command)
 
 cat > "$TEMP_SCRIPT" << 'EOFSCRIPT'
 #!/bin/bash
-cd "/Users/eugeneprokopenko/Downloads/Converter"
+cd "/Users/eugeneprokopenko/Projects/MyWhisper"
 source "myenv/bin/activate"
 echo "Запуск Whisper Transcriber..."
 echo "========================================"
