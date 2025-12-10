@@ -1,0 +1,26 @@
+# Ignore contents of processing folders
+MyWhisper_to_process/*
+files_done/*
+files_to_remove/*
+Files to Remove/*
+
+# Virtual Environment
+myenv/
+venv/
+env/
+.venv/
+
+# Also ignore the .env file containing secrets
+.env
+
+# Ignore python cache
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+
+# Exceptions: Keep the .gitkeep files to strictly track the folders
+!MyWhisper_to_process/.gitkeep
+!files_done/.gitkeep
+!files_to_remove/.gitkeep

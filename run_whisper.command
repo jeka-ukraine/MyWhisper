@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Полный путь к директории проекта
+PROJECT_DIR="/Users/eugeneprokopenko/Downloads/Converter"
+
+# Полный путь к виртуальному окружению
+VENV_DIR="$PROJECT_DIR/myenv"
+
+# Полный путь к Python скрипту
+PYTHON_SCRIPT="$PROJECT_DIR/whisper_v19_corrected_timer_60_percent_rem_file.py"
+
+# Переходим в директорию проекта
+cd "$PROJECT_DIR" || {
+    echo "Ошибка: не удалось перейти в директорию $PROJECT_DIR"
+    read -p "Нажмите Enter для закрытия..."
+    exit 1
+}
+
+# Активируем виртуальное окружение
+echo "Активация виртуального окружения..."
+source "$VENV_DIR/bin/activate" || {
+    echo "Ошибка: не удалось активировать виртуальное окружение $VENV_DIR"
+    read -p "Нажмите Enter для закрытия..."
+    exit 1
+}
+
+# Запускаем Python скрипт
+echo "Запуск скрипта транскрипции..."
+echo "========================================"
+python "$PYTHON_SCRIPT"
+
+# Сохраняем код выхода
+EXIT_CODE=$?
+
+# Выводим сообщение о завершении
+echo "========================================"
+if [ $EXIT_CODE -eq 0 ]; then
+    echo "Скрипт успешно завершен!"
+else
+    echo "Скрипт завершен с ошибкой (код: $EXIT_CODE)"
+fi
+
+# Деактивируем виртуальное окружение
+deactivate
+
+# Оставляем терминал открытым
+echo ""
+read -p "Нажмите Enter для закрытия терминала..."
