@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Полный путь к директории проекта
-PROJECT_DIR="/Users/eugeneprokopenko/Projects/MyWhisper"
+# Определяем директорию скрипта (это корень проекта)
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Полный путь к виртуальному окружению
 VENV_DIR="$PROJECT_DIR/myenv"

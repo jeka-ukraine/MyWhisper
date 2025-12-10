@@ -1,2 +1,4 @@
 #!/bin/bash
-open "/Users/eugeneprokopenko/Projects/MyWhisper/run_whisper.command"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$DIR/../../.." && pwd)"
+open "$PROJECT_ROOT/run_whisper.command"
