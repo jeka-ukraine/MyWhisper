@@ -210,6 +210,9 @@ def run_transcription_pass(audio_file, model_config, language, strict_mode):
             f.write(text_result)
         
         print_step(f"Сохранено: {final_file_name}")
+        print(f"\n--- Preview ({len(text_result)} chars total, showing first 1000) ---")
+        print(text_result[:1000])
+        print("--------------------------------------------------------------\n")
         return True
 
     finally:
@@ -351,11 +354,47 @@ def get_user_choice():
         ready, _, _ = select.select([sys.stdin], [], [], 1)
         if ready:
             inp = sys.stdin.readline().strip()
-            if inp in ['1', '2', '3']:
+            if inp == '' or inp == '1':
+                return '1'
+            elif inp in ['2', '3']:
                 return inp
             else:
                 print("\nНеверный ввод. Введите 1, 2 или 3.")
                 start = time.time() # Reset timer on interaction if desired, or let it flow. Let's just continue.
+
+def get_language_priority():
+    print("\n" + "="*50)
+    print("Какой язык использовать приоритетным для транскрибации?")
+    print(" [1] Автоопределение (Default)")
+    print(" [2] Украинский")
+    print(" [3] Русский")
+    print(" [4] Английский")
+    print("="*50)
+    
+    timeout = 7
+    print(f"Автоматический выбор [1] через {timeout} секунд...")
+
+    start = time.time()
+    while True:
+        remaining = int(timeout - (time.time() - start))
+        if remaining <= 0:
+            print("\nВремя вышло. Выбран язык [1] (Автоопределение).")
+            return None
+        
+        sys.stdout.write(f"\rВведите выбор [1-4] (осталось {remaining}с): ")
+        sys.stdout.flush()
+        
+        ready, _, _ = select.select([sys.stdin], [], [], 1)
+        if ready:
+            inp = sys.stdin.readline().strip()
+            if inp == '' or inp == '1':
+                return None
+            elif inp == '2':
+                return 'uk'
+            elif inp == '3':
+                return 'ru'
+            elif inp == '4':
+                return 'en'
 
 def main():
     choice = get_user_choice()
@@ -375,6 +414,9 @@ def main():
     elif args.language_only:
         language = lang_map.get(args.language_only)
         strict = True
+
+    if choice == "1":
+        language = get_language_priority()
     
     # Find files
     input_dir = "MyWhisper_to_process"
@@ -473,6 +515,9 @@ def main():
                      with open(out_path, "w", encoding="utf-8") as f:
                          f.write(wx_text)
                      print_step(f"Сохранено: {out_path}")
+                     print(f"\n--- Preview ({len(wx_text)} chars total, showing first 1000) ---")
+                     print(wx_text[:1000])
+                     print("--------------------------------------------------------------\n")
                      # Move only if success
                      if choice == "3":
                          move_to_remove_folder(audio_file)
