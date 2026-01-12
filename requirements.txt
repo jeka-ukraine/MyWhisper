@@ -4,4 +4,7 @@ ffmpeg-python
 pydub
 tqdm
 omegaconf
+questionary
+rich
 git+https://github.com/m-bain/whisperx.git
+mlx-whisper
