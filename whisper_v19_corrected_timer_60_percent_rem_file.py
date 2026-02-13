@@ -61,6 +61,106 @@ def print_step(message, style="bold blue"):
         if not message.endswith('.'): message += '.'
         print(message)
 
+def is_apple_silicon():
+    import platform
+    return platform.system() == "Darwin" and platform.machine() == "arm64"
+
+def get_key():
+    import sys
+    import select
+    import platform
+    if platform.system() != "Darwin":
+        return sys.stdin.read(1)
+    
+    import termios
+    import tty
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+        if ch == '\x1b':
+            dr, _, _ = select.select([sys.stdin], [], [], 0.05)
+            if dr:
+                ch += sys.stdin.read(2)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
+def get_timed_choice(title, options, default_index, timeout=10):
+    import time
+    import sys
+    import select
+    from rich.live import Live
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.progress import Progress, BarColumn, TextColumn
+    from rich.console import Group
+    
+    if not console:
+        start = time.time()
+        while time.time() - start < timeout:
+            print(f"\r{title} [1-{len(options)}] (Автовыбор в {int(timeout - (time.time() - start))}с): ", end="", flush=True)
+            r, _, _ = select.select([sys.stdin], [], [], 1)
+            if r:
+                res = sys.stdin.readline().strip()
+                if res.isdigit() and 1 <= int(res) <= len(options):
+                    return options[int(res)-1][1]
+        return options[default_index][1]
+
+    selected_index = default_index
+    start_time = time.time()
+    
+    with Live(auto_refresh=True, console=console, transient=True) as live:
+        while True:
+            elapsed = time.time() - start_time
+            remaining = max(0, timeout - elapsed)
+            
+            if remaining <= 0:
+                break
+            
+            table = Table.grid(padding=(0, 1))
+            for i, (label, value) in enumerate(options):
+                prefix = "» " if i == selected_index else "  "
+                style = "bold cyan" if i == selected_index else "white"
+                
+                if i == default_index:
+                    display_label = f"{label} [dim yellow](ПО УМОЛЧАНИЮ)[/]"
+                else:
+                    display_label = label
+                table.add_row(f"[{style}]{prefix}{display_label}[/]")
+            
+            progress = Progress(
+                TextColumn("[bold yellow]Автовыбор через: {task.fields[remaining]:.1f}с"),
+                BarColumn(bar_width=40, pulse_style="yellow"),
+                console=console
+            )
+            progress.add_task("", total=timeout, completed=elapsed, remaining=remaining)
+            
+            panel = Panel(
+                Group(table, "", progress),
+                title=f"[bold blue]? {title}",
+                subtitle="[dim]Стрелки для выбора, Enter - подтвердить, Цифры - быстрый выбор[/]",
+                border_style="blue",
+                padding=(1, 2)
+            )
+            live.update(panel)
+            
+            dr, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if dr:
+                key = get_key()
+                if key in ['\r', '\n']:
+                    return options[selected_index][1]
+                elif key == '\x1b[A': # Up
+                    selected_index = (selected_index - 1) % len(options)
+                elif key == '\x1b[B': # Down
+                    selected_index = (selected_index + 1) % len(options)
+                elif key.isdigit():
+                    idx = int(key) - 1
+                    if 0 <= idx < len(options):
+                        return options[idx][1]
+        return options[selected_index][1]
+
 def print_preview(text, limit=1000):
     if not text: return
     preview = text[:limit]
@@ -475,75 +575,38 @@ def get_wx_subchoice():
             return inp if inp in ['1', '2', '3'] else "1"
 
 def get_user_choice():
-    if questionary:
-        print("\n" + "="*50)
-        try:
-            choice = questionary.select(
-                "ВЫБОР РЕЖИМА РАБОТЫ (Стрелки для выбора, Enter - подтвердить):",
-                choices=[
-                    questionary.Choice("Стандарт: Whisper CPP + Large-v3-Turbo", value="1"),
-                    questionary.Choice("Тест-сравнение: 7 моделей/этапов", value="2"),
-                    questionary.Choice("WhisperX: Диаризация и точные тайминги", value="3"),
-                    questionary.Choice("MLX-Whisper: Максимальная скорость (Apple Silicon)", value="4"),
-                ],
-                default="1"
-            ).ask()
-            
-            res = choice if choice else "1"
-            sub = None
-            if res == "3":
-                sub = get_wx_subchoice()
-            return res, sub
-        except:
-            return "1", None
-
-    # Fallback
-    print("\n" + "="*50)
-    print("ВЫБОР РЕЖИМА: [1] Стандарт, [2] Тест, [3] WhisperX, [4] MLX")
-    timeout = 7
-    start = time.time()
-    while True:
-        remaining = int(timeout - (time.time() - start))
-        if remaining <= 0: return "1", None
-        sys.stdout.write(f"\rВведите выбор [1/2/3/4] ({remaining}с): ")
-        sys.stdout.flush()
-        ready, _, _ = select.select([sys.stdin], [], [], 1)
-        if ready:
-            inp = sys.stdin.readline().strip()
-            if inp == '3': return '3', get_wx_subchoice()
-            return (inp if inp in ['1', '2', '4'] else '1'), None
+    title = "ВЫБОР РЕЖИМА РАБОТЫ"
+    choices = [
+        ("Стандарт: Whisper CPP + Large-v3-Turbo", "1"),
+        ("Тест-сравнение: 7 моделей/этапов", "2"),
+        ("WhisperX: Диаризация и точные тайминги", "3"),
+        ("MLX-Whisper: Максимальная скорость (Apple Silicon)", "4"),
+    ]
+    
+    if is_apple_silicon():
+        default_idx = 3 # Вариант 4
+    else:
+        default_idx = 0 # Вариант 1
+        
+    choice = get_timed_choice(title, choices, default_idx, timeout=10)
+    
+    sub = None
+    if choice == "3":
+        sub = get_wx_subchoice()
+    return choice, sub
 
 def get_language_priority():
-    if questionary:
-        try:
-            choice = questionary.select(
-                "Какой язык использовать приоритетным?",
-                choices=[
-                    questionary.Choice("Автоопределение", value="1"),
-                    questionary.Choice("Украинский", value="uk"),
-                    questionary.Choice("Русский", value="ru"),
-                    questionary.Choice("Английский", value="en"),
-                ],
-                default="1"
-            ).ask()
-            return choice if choice != "1" else None
-        except:
-            return None
-
-    # Fallback
-    print("\nЯЗЫК: [1] Auto, [2] Ukr, [3] Rus, [4] Eng")
-    timeout = 7
-    start = time.time()
-    while True:
-        remaining = int(timeout - (time.time() - start))
-        if remaining <= 0: return None
-        sys.stdout.write(f"\rВыбор [1-4] ({remaining}с): ")
-        sys.stdout.flush()
-        ready, _, _ = select.select([sys.stdin], [], [], 1)
-        if ready:
-            inp = sys.stdin.readline().strip()
-            mapping = {'2': 'uk', '3': 'ru', '4': 'en'}
-            return mapping.get(inp)
+    title = "Приоритетный язык для распознавания"
+    choices = [
+        ("Автоопределение (Auto)", "1"),
+        ("Украинский (Ukrainian)", "uk"),
+        ("Русский (Russian)", "ru"),
+        ("Английский (English)", "en"),
+    ]
+    
+    default_idx = 0 # Авто
+    choice = get_timed_choice(title, choices, default_idx, timeout=10)
+    return choice if choice != "1" else None
 
 def main():
     choice, sub_choice = get_user_choice()
